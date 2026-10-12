@@ -1,0 +1,77 @@
+erDiagram
+    ROLE ||--o{ USER : "имеет роль"
+    RESTAURANT ||--o{ USER : "привязан к"
+    UNIT ||--o{ PRODUCT : "единица измерения"
+    PRODUCT ||--o{ WASTE_RECORD : "списывается"
+    REASON ||--o{ WASTE_RECORD : "причина"
+    RESTAURANT ||--o{ WASTE_RECORD : "место списания"
+    USER ||--o{ WASTE_RECORD : "создал"
+    USER ||--o{ AUDIT_LOG : "совершил действие"
+
+    ROLE {
+        int id PK
+        string name
+    }
+
+    USER {
+        int id PK
+        string login
+        string password_hash
+        string display_name
+        string avatar_url
+        int role_id FK
+        int restaurant_id FK
+        datetime created_at
+    }
+
+    RESTAURANT {
+        int id PK
+        string name
+        string address
+        string number
+    }
+
+    UNIT {
+        int id PK
+        string name
+    }
+
+    PRODUCT {
+        int id PK
+        string name
+        string category
+        int unit_id FK
+        string status
+        datetime created_at
+    }
+
+    REASON {
+        int id PK
+        string name
+        string description
+        string status
+        datetime created_at
+    }
+
+    WASTE_RECORD {
+        int id PK
+        int product_id FK
+        int reason_id FK
+        decimal quantity
+        string comment
+        string photo_urls
+        int restaurant_id FK
+        int created_by FK
+        datetime created_at
+    }
+
+    AUDIT_LOG {
+        int id PK
+        int user_id FK
+        string action
+        string entity_type
+        int entity_id
+        string old_value
+        string new_value
+        datetime created_at
+    }

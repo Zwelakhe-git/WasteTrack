@@ -1,0 +1,54 @@
+flowchart LR
+    subgraph Актеры
+        Cook[Сотрудник кухни]
+        Manager[Менеджер]
+        Admin[Администратор]
+    end
+
+    subgraph WasteTrack
+        UC1[Записать списание]
+        UC2[Просмотреть списания за день]
+        UC3[Войти в систему]
+        UC4[Выйти из системы]
+        UC5[Редактировать профиль]
+        UC6[Управлять продуктами]
+        UC7[Настроить единицу измерения]
+        UC8[Управлять причинами списаний]
+        UC9[Просматривать аналитику]
+        UC10[Фильтровать аналитику]
+        UC11[Экспортировать отчёт]
+        UC12[Просматривать журнал аудита]
+        UC13[Управлять ресторанами]
+        UC14[Создавать учётные записи менеджеров]
+        UC15[Управлять единицами измерения]
+        UC16[Настраивать пороги уведомлений]
+    end
+
+    Cook --> UC1
+    Cook --> UC2
+
+    Manager --> UC3
+    Manager --> UC4
+    Manager --> UC5
+    Manager --> UC6
+    Manager --> UC7
+    Manager --> UC8
+    Manager --> UC9
+    Manager --> UC10
+    Manager --> UC11
+    Manager --> UC12
+
+    Admin --> UC3
+    Admin --> UC4
+    Admin --> UC5
+    Admin --> UC6
+    Admin --> UC7
+    Admin --> UC8
+    Admin --> UC9
+    Admin --> UC10
+    Admin --> UC11
+    Admin --> UC12
+    Admin --> UC13
+    Admin --> UC14
+    Admin --> UC15
+    Admin --> UC16

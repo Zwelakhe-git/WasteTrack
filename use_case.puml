@@ -1,0 +1,57 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Сотрудник кухни" as Cook
+actor "Менеджер" as Manager
+actor "Администратор" as Admin
+
+rectangle WasteTrack {
+    usecase "Записать списание" as UC1
+    usecase "Просмотреть списания за день" as UC2
+    usecase "Войти в систему" as UC3
+    usecase "Выйти из системы" as UC4
+    usecase "Редактировать профиль" as UC5
+    usecase "Управлять продуктами" as UC6
+    usecase "Настроить единицу измерения" as UC7
+    usecase "Управлять причинами списаний" as UC8
+    usecase "Просматривать аналитику" as UC9
+    usecase "Фильтровать аналитику" as UC10
+    usecase "Экспортировать отчёт" as UC11
+    usecase "Просматривать журнал аудита" as UC12
+    usecase "Управлять ресторанами" as UC13
+    usecase "Создавать учётные записи менеджеров" as UC14
+    usecase "Управлять единицами измерения" as UC15
+    usecase "Настраивать пороги уведомлений" as UC16
+}
+
+Cook --> UC1
+Cook --> UC2
+
+Manager --> UC3
+Manager --> UC4
+Manager --> UC5
+Manager --> UC6
+Manager --> UC7
+Manager --> UC8
+Manager --> UC9
+Manager --> UC10
+Manager --> UC11
+Manager --> UC12
+
+Admin --> UC3
+Admin --> UC4
+Admin --> UC5
+Admin --> UC6
+Admin --> UC7
+Admin --> UC8
+Admin --> UC9
+Admin --> UC10
+Admin --> UC11
+Admin --> UC12
+Admin --> UC13
+Admin --> UC14
+Admin --> UC15
+Admin --> UC16
+
+@enduml

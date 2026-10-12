@@ -1,0 +1,32 @@
+@startuml
+sequenceDiagram
+    participant Cook as Сотрудник кухни
+    participant UI as React SPA
+    participant API as FastAPI /waste
+    participant Service as WasteService
+    participant Repo as WasteRepository
+    participant DB as PostgreSQL
+
+    Cook->>UI: Открывает форму списания
+    UI->>API: GET /products?status=active
+    API->>Repo: Запрос активных продуктов
+    Repo->>DB: SELECT * FROM products WHERE status='active'
+    DB-->>Repo: Список продуктов
+    Repo-->>API: Список продуктов
+    API-->>UI: JSON со списком продуктов
+
+    Cook->>UI: Выбирает продукт
+    UI->>UI: Автоматически подставляет единицу измерения
+
+    Cook->>UI: Указывает количество и причину
+    UI->>API: POST /waste {product_id, quantity, reason_id}
+    API->>Service: Валидация и создание записи
+    Service->>Repo: Сохранить запись
+    Repo->>DB: INSERT INTO waste_records
+    DB-->>Repo: OK
+    Repo-->>Service: Запись создана
+    Service-->>API: Результат
+    API-->>UI: 201 Created
+    UI-->>Cook: Подтверждение записи
+
+@enduml

@@ -1,0 +1,61 @@
+flowchart TB
+    subgraph Client["Клиент (браузер)"]
+        UI_Cook["Интерфейс сотрудника кухни<br/>(форма списания)"]
+        UI_Manager["Интерфейс менеджера<br/>(аналитика, справочники)"]
+        UI_Admin["Интерфейс администратора<br/>(рестораны, пользователи)"]
+    end
+
+    subgraph Frontend["Frontend (React SPA)"]
+        Router["React Router"]
+        State["State Management<br/>(Redux / Zustand / React Query)"]
+        APIClient["API Client (axios / fetch)"]
+        Components["UI-компоненты<br/>(формы, таблицы, графики)"]
+    end
+
+    subgraph Backend["Backend (FastAPI)"]
+        AuthRouter["/auth<br/>Аутентификация"]
+        WasteRouter["/waste<br/>Записи списаний"]
+        ProductRouter["/products<br/>Справочник продуктов"]
+        ReasonRouter["/reasons<br/>Справочник причин"]
+        AnalyticsRouter["/analytics<br/>Аналитика и отчёты"]
+        AdminRouter["/admin<br/>Рестораны, пользователи"]
+
+        AuthService["Auth Service<br/>JWT, хеширование"]
+        WasteService["Waste Service<br/>Бизнес-логика списаний"]
+        AnalyticsService["Analytics Service<br/>Агрегация, отчёты"]
+        AdminService["Admin Service<br/>Управление справочниками"]
+
+        Repositories["Repositories / ORM<br/>SQLAlchemy"]
+    end
+
+    subgraph DB["База данных"]
+        PostgreSQL[("PostgreSQL")]
+    end
+
+    UI_Cook --> Router
+    UI_Manager --> Router
+    UI_Admin --> Router
+    Router --> State
+    State --> APIClient
+    APIClient --> Components
+
+    APIClient -->|HTTPS / JSON| AuthRouter
+    APIClient -->|HTTPS / JSON| WasteRouter
+    APIClient -->|HTTPS / JSON| ProductRouter
+    APIClient -->|HTTPS / JSON| ReasonRouter
+    APIClient -->|HTTPS / JSON| AnalyticsRouter
+    APIClient -->|HTTPS / JSON| AdminRouter
+
+    AuthRouter --> AuthService
+    WasteRouter --> WasteService
+    ProductRouter --> AdminService
+    ReasonRouter --> AdminService
+    AnalyticsRouter --> AnalyticsService
+    AdminRouter --> AdminService
+
+    AuthService --> Repositories
+    WasteService --> Repositories
+    AnalyticsService --> Repositories
+    AdminService --> Repositories
+
+    Repositories --> PostgreSQL
