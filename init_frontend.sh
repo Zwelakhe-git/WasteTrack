@@ -1,9 +1,9 @@
 #!/bin/bash
-npm create vite@latest frontend -- --template react-ts
-cd frontend
-npm install
-npm install axios react-router-dom zustand
-npm install -D @types/node
+# npm create vite@latest frontend -- --template react-ts
+# cd frontend 
+#npm install
+#npm install axios react-router-dom zustand
+#npm install -D @types/node
 
 echo 'import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
@@ -19,7 +19,7 @@ export default defineConfig({
       },
     },
   },
-});' > vite.config.ts
+});' > frontend/vite.config.ts
 
 echo 'import axios from "axios";
 
@@ -36,7 +36,7 @@ apiClient.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
-});' > src/api/client.ts
+});' > frontend/src/api/client.ts
 
 echo 'import { useEffect, useState } from "react";
 import { apiClient } from "./api/client";
@@ -59,4 +59,4 @@ function App() {
   );
 }
 
-export default App;' > src/App.tsx
+export default App;' > frontend/src/App.tsx
