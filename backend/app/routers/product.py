@@ -8,6 +8,7 @@ from app.models.user import User, UserRole
 from app.models.product import Product, Unit, ProductStatus
 from app.schemas.product import ProductCreate, ProductRead, UnitRead
 from app.core.deps import get_current_user
+from sqlalchemy.orm import selectinload
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
@@ -27,9 +28,9 @@ async def get_units(db: Annotated[AsyncSession, Depends(get_db)]):
 async def get_products(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_manager_or_admin)],
-    status: ProductStatus | None = None # Можно фильтровать по статусу (например, только active)
+    status: ProductStatus | None = None
 ):
-    query = select(Product)
+    query = select(Product).options(selectinload(Product.unit)) # <--- Добавили selectinload
     if status:
         query = query.where(Product.status == status)
     result = await db.execute(query)
@@ -41,7 +42,6 @@ async def create_product(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_manager_or_admin)]
 ):
-    # Проверяем, существует ли такая единица измерения
     unit = await db.get(Unit, product_in.unit_id)
     if not unit:
         raise HTTPException(status_code=400, detail="Unit not found")
@@ -49,6 +49,11 @@ async def create_product(
     new_product = Product(**product_in.model_dump())
     db.add(new_product)
     await db.commit()
-    # Обновляем, чтобы подтянуть связанную Unit для ответа
-    await db.refresh(new_product)
-    return new_product
+    
+    # ВМЕСТО await db.refresh(new_product) делаем так:
+    result = await db.execute(
+        select(Product)
+        .options(selectinload(Product.unit)) # <--- Говорим сразу подгрузить Unit
+        .where(Product.id == new_product.id)
+    )
+    return result.scalars().first()
