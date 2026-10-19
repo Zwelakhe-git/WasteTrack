@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import AsyncSessionLocal
 from app.init_db import create_first_admin
+from app.routers import auth
+
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -35,3 +37,5 @@ app.add_middleware(
 @app.get("/api/health", tags=["system"])
 async def health_check():
     return {"status": "ok", "app": settings.APP_NAME}
+
+app.include_router(auth.router, prefix="/api")
