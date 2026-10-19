@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import String, Enum, ForeignKey
+from sqlalchemy import String, Enum as SQLEnum, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 from app.models.base import TimestampMixin
@@ -17,7 +17,7 @@ class User(Base, TimestampMixin):
     display_name: Mapped[str] = mapped_column(String(50), nullable=False)
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     
-    role: Mapped[UserRole] = mapped_column(Enum(UserRole, values_callable=lambda obj: [e.value for e in obj]), default=UserRole.MANAGER, nullable=False)
+    role: Mapped[UserRole] = mapped_column(SQLEnum(UserRole, values_callable=lambda obj: [e.value for e in obj]), default=UserRole.MANAGER, nullable=False)
     
     restaurant_id: Mapped[int | None] = mapped_column(ForeignKey("restaurants.id"), nullable=True)
     
