@@ -17,7 +17,7 @@ class User(Base, TimestampMixin):
     display_name: Mapped[str] = mapped_column(String(50), nullable=False)
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     
-    role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.MANAGER, nullable=False)
+    role: Mapped[UserRole] = mapped_column(Enum(UserRole, values_callable=lambda obj: [e.value for e in obj]), default=UserRole.MANAGER, nullable=False)
     
     restaurant_id: Mapped[int | None] = mapped_column(ForeignKey("restaurants.id"), nullable=True)
     
