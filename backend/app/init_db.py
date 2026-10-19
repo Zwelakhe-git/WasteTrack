@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.models.user import User, UserRole
 from app.core.security import get_password_hash
+from app.models.product import Unit
 
 logger = logging.getLogger(__name__)
 
@@ -27,3 +28,15 @@ async def create_first_admin(db: AsyncSession) -> None:
         logger.info("Администратор успешно создан!")
     else:
         logger.info("Пользователи уже существуют. Инициализация не требуется.")
+
+async def create_initial_units(db: AsyncSession) -> None:
+    result = await db.execute(select(Unit).limit(1))
+    if not result.scalars().first():
+        logger.info("Создаем базовые единицы измерения...")
+        units = [
+            Unit(name="кг"), Unit(name="г"), Unit(name="шт"), 
+            Unit(name="л"), Unit(name="мл"), Unit(name="порция")
+        ]
+        db.add_all(units)
+        await db.commit()
+        logger.info("Единицы измерения созданы.")

@@ -3,8 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import AsyncSessionLocal
-from app.init_db import create_first_admin
-from app.routers import auth
+from app.init_db import create_first_admin, create_initial_units
+from app.routers import auth, restaurant, product
 
 import logging
 
@@ -15,6 +15,7 @@ async def lifespan(app: FastAPI):
     # Действия при запуске
     async with AsyncSessionLocal() as session:
         await create_first_admin(session)
+        await create_initial_units(session)
     yield
     # Действия при остановке (если нужны)
     pass
@@ -39,3 +40,6 @@ async def health_check():
     return {"status": "ok", "app": settings.APP_NAME}
 
 app.include_router(auth.router, prefix="/api")
+app.include_router(auth.router, prefix="/api")
+app.include_router(restaurant.router, prefix="/api")
+app.include_router(product.router, prefix="/api")
