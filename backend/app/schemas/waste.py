@@ -5,6 +5,7 @@ from datetime import datetime
 class WasteRecordCreate(BaseModel):
     product_id: int
     reason_id: int
+    restaurant_id: int
     quantity: Decimal
     comment: str | None = None
     photo_urls: list[str] | None = None
