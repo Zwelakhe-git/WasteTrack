@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import AsyncSessionLocal
 from app.init_db import create_first_admin, create_initial_units
-from app.routers import auth, restaurant, product
+from app.routers import auth, restaurant, product, waste
 
 import logging
 
@@ -43,3 +43,4 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
 app.include_router(restaurant.router, prefix="/api")
 app.include_router(product.router, prefix="/api")
+app.include_router(waste.router, prefix="/api")
