@@ -4,6 +4,7 @@ from app.schemas.product import UnitRead, ProductBase, ProductCreate, ProductRea
 from app.schemas.reason import ReasonBase, ReasonCreate, ReasonRead
 from app.schemas.waste import WasteRecordCreate, WasteRecordRead
 from app.schemas.restaurant import RestaurantBase, RestaurantCreate, RestaurantRead
+from app.schemas.analytics import AnalyticsSummary, ProductStat, ReasonStat
 
 __all__ = [
     "Token",
@@ -11,5 +12,6 @@ __all__ = [
     "UnitRead", "ProductBase", "ProductCreate", "ProductRead",
     "ReasonBase", "ReasonCreate", "ReasonRead",
     "WasteRecordCreate", "WasteRecordRead",
-    "RestaurantBase", "RestaurantCreate", "RestaurantRead"
+    "RestaurantBase", "RestaurantCreate", "RestaurantRead",
+    "AnalyticsSummary", "ProductStat", "ReasonStat"
 ]
