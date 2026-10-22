@@ -1,21 +1,40 @@
-import { useEffect, useState } from "react";
-import { apiClient } from "./api/client";
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from './store/authStore';
+
+// Временные компоненты (создадим их ниже)
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import TerminalPage from './pages/TerminalPage';
 
 function App() {
-  const [status, setStatus] = useState<string>("...");
+  const { isAuthenticated, fetchMe, user } = useAuthStore();
 
   useEffect(() => {
-    apiClient
-      .get("/health")
-      .then((res) => setStatus(res.data.status))
-      .catch(() => setStatus("error"));
-  }, []);
+    // Если токен есть, но данных юзера нет, запрашиваем их
+    if (isAuthenticated && !user) {
+      fetchMe();
+    }
+  }, [isAuthenticated, user, fetchMe]);
 
   return (
-    <div style={{ padding: 24, fontFamily: "sans-serif" }}>
-      <h1>WasteTrack</h1>
-      <p>Backend status: {status}</p>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        {/* Публичный роут для кухни */}
+        <Route path="/terminal" element={<TerminalPage />} />
+        
+        {/* Страница входа */}
+        <Route path="/login" element={<LoginPage />} />
+
+        {/* Защищенные роуты */}
+        <Route 
+          path="/" 
+          element={
+            isAuthenticated ? <DashboardPage /> : <Navigate to="/login" replace />
+          } 
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
