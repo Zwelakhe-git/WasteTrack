@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
+import CatalogsPage from './pages/CatalogsPage';
+
 
 // Временные компоненты (создадим их ниже)
 import LoginPage from './pages/LoginPage';
@@ -20,6 +22,10 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route 
+          path="/catalogs" 
+          element={isAuthenticated ? <CatalogsPage /> : <Navigate to="/login" replace />} 
+        />
         {/* Публичный роут для кухни */}
         <Route path="/terminal" element={<TerminalPage />} />
         

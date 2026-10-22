@@ -4,6 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
 from datetime import datetime, timedelta
+import io
+import pandas as pd
+from fastapi.responses import StreamingResponse
 
 from app.database import get_db
 from app.models.waste_record import WasteRecord
@@ -75,4 +78,50 @@ async def get_analytics_summary(
         total_quantity=total_data["total_quantity"] or 0,
         top_reasons=top_reasons,
         top_products=top_products
+    )
+
+@router.get("/export")
+async def export_waste_records(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_manager_or_admin)],
+    restaurant_id: int | None = None,
+    days: int = 30
+):
+    start_date = datetime.utcnow() - timedelta(days=days)
+    
+    query = (
+        select(
+            WasteRecord.created_at,
+            Product.name.label("product"),
+            Reason.name.label("reason"),
+            WasteRecord.quantity,
+            WasteRecord.comment
+        )
+        .join(Product, WasteRecord.product_id == Product.id)
+        .join(Reason, WasteRecord.reason_id == Reason.id)
+        .where(WasteRecord.created_at >= start_date)
+    )
+    if restaurant_id:
+        query = query.where(WasteRecord.restaurant_id == restaurant_id)
+        
+    result = await db.execute(query)
+    rows = result.mappings().all()
+
+    # Преобразуем в DataFrame
+    df = pd.DataFrame(rows)
+    if not df.empty:
+        df['created_at'] = pd.to_datetime(df['created_at']).dt.strftime('%Y-%m-%d %H:%M')
+        df.columns = ['Дата и время', 'Продукт', 'Причина', 'Количество', 'Комментарий']
+
+    # Сохраняем в буфер
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Списания')
+    
+    buffer.seek(0)
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=wastetrack_report_{days}d.xlsx"}
     )

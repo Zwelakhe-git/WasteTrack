@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import AnalyticsCards from '../components/AnalyticsCards';
 import AnalyticsCharts from '../components/AnalyticsCharts';
@@ -42,6 +42,27 @@ export default function DashboardPage() {
           <h1 style={{ margin: 0 }}>WasteTrack</h1>
           <p style={{ margin: 0, color: '#666' }}>Добро пожаловать, {user?.display_name}</p>
         </div>
+        <Link to="/catalogs" style={{ padding: '8px 16px', background: '#007bff', color: '#fff', textDecoration: 'none', borderRadius: 6 }}>
+            Справочники
+        </Link>
+        <button 
+            onClick={() => {
+                // Прямая ссылка на скачивание с токеном в заголовке не сработает через window.open,
+                // поэтому используем apiClient с responseType: 'blob'
+                apiClient.get(`/analytics/export?days=${days}`, { responseType: 'blob' }).then(response => {
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `report_${days}d.xlsx`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                });
+            }}
+            style={{ padding: '8px 16px', background: '#28a745', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+            >
+            Экспорт в Excel
+        </button>
         <div style={{ display: 'flex', gap: 15, alignItems: 'center' }}>
           <select 
             value={days} 
