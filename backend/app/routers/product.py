@@ -27,7 +27,6 @@ async def get_units(db: Annotated[AsyncSession, Depends(get_db)]):
 @router.get("/", response_model=List[ProductRead])
 async def get_products(
     db: Annotated[AsyncSession, Depends(get_db)],
-    current_user: Annotated[User, Depends(get_current_manager_or_admin)],
     status: ProductStatus | None = None
 ):
     query = select(Product).options(selectinload(Product.unit)) # <--- Добавили selectinload
