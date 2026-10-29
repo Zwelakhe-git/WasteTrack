@@ -1,8 +1,10 @@
 from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, status, Header
+from sqlalchemy import func, extract
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
+from datetime import datetime, timezone, timedelta
 
 from app.database import get_db
 from app.config import settings
@@ -80,3 +82,61 @@ async def get_waste_records(
         
     result = await db.execute(query.order_by(WasteRecord.created_at.desc()))
     return result.scalars().all()
+
+
+@router.get("/grid")
+async def get_waste_grid(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    restaurant_id: int,
+    date: str  # формат YYYY-MM-DD
+):
+    """
+    Возвращает сгруппированные по часам данные о списаниях за конкретный день.
+    """
+    # Парсим дату и делаем границы дня
+    target_date = datetime.strptime(date, "%Y-%m-%d").date()
+    start_dt = datetime.combine(target_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+    end_dt = start_dt + timedelta(days=1)
+
+    # Группируем по product_id и часу создания записи
+    query = (
+        select(
+            WasteRecord.product_id,
+            extract('hour', WasteRecord.created_at).label('hour'),
+            func.sum(WasteRecord.quantity).label('total_quantity')
+        )
+        .where(
+            WasteRecord.restaurant_id == restaurant_id,
+            WasteRecord.created_at >= start_dt,
+            WasteRecord.created_at < end_dt
+        )
+        .group_by(WasteRecord.product_id, extract('hour', WasteRecord.created_at))
+    )
+    
+    result = await db.execute(query)
+    rows = result.mappings().all()
+    
+    # Возвращаем в удобном для фронтенда формате
+    return [
+        {
+            "product_id": row["product_id"],
+            "hour": int(row["hour"]),
+            "total_quantity": float(row["total_quantity"])
+        }
+        for row in rows
+    ]
+
+@router.delete("/{record_id}")
+async def delete_waste_record(
+    record_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)]
+):
+    """Удаление ошибочной записи (если менеджер нажал 0)"""
+    result = await db.execute(select(WasteRecord).where(WasteRecord.id == record_id))
+    record = result.scalars().first()
+    if record:
+        await db.delete(record)
+        await db.commit()
+        return {"status": "deleted"}
+    return {"status": "not found"}
