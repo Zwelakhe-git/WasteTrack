@@ -24,7 +24,7 @@ export const terminalApi = {
     return res.data;
   },
 
-  createWaste: async (data: { product_id: number; reason_id: number; restaurant_id: number; quantity: number; comment?: string }) => {
+  createWaste: async (data: { product_id: number; reason_id: number; restaurant_id: number; quantity: number; comment?: string, created_at?: string }) => {
     const res = await terminalClient.post('/waste/', data);
     return res.data;
   }

@@ -91,13 +91,14 @@ export default function TerminalPage() {
         alert('Для отмены списания обратитесь к администратору (в разработке)');
         return;
       }
-
+      const date = new Date();
       // Отправляем списание
       await terminalApi.createWaste({
         product_id: selectedProduct.id,
         reason_id: Number(selectedReason),
         restaurant_id: 1,
         quantity: qty,
+        created_at: date.toLocaleString('sv-SE'),
       });
       
       setSuccessMsg(`Списано: ${selectedProduct.name}`);

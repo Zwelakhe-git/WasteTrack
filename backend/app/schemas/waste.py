@@ -9,6 +9,7 @@ class WasteRecordCreate(BaseModel):
     quantity: Decimal
     comment: str | None = None
     photo_urls: list[str] | None = None
+    created_at: str | None = None
     # restaurant_id сюда НЕ входит, он берется из сессии
 
 class WasteRecordRead(BaseModel):

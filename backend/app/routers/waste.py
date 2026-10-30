@@ -15,6 +15,7 @@ from app.models.restaurant import Restaurant
 from app.models.user import User
 from app.schemas.waste import WasteRecordCreate, WasteRecordRead
 from app.core.deps import get_current_user
+from app.utils.utils import parse_js_iso
 
 router = APIRouter(prefix="/waste", tags=["Waste Records"])
 
@@ -54,6 +55,8 @@ async def create_waste_record(
         photo_urls=waste_in.photo_urls,
         created_by_id=None # Сотрудник кухни анонимен
     )
+    print(f"BEACON!! creating record at {waste_in.created_at} and NOW")
+    new_record.created_at = datetime.fromisoformat(waste_in.created_at);
     db.add(new_record)
     await db.commit()
 
