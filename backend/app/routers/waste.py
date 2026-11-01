@@ -56,7 +56,8 @@ async def create_waste_record(
         created_by_id=None # Сотрудник кухни анонимен
     )
     print(f"BEACON!! creating record at {waste_in.created_at} and NOW")
-    new_record.created_at = datetime.fromisoformat(waste_in.created_at);
+    if waste_in.created_at:
+        new_record.created_at = waste_in.created_at
     db.add(new_record)
     await db.commit()
 
