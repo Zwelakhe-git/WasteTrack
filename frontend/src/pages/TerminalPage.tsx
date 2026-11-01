@@ -104,7 +104,7 @@ export default function TerminalPage() {
         reason_id: Number(selectedReason),
         restaurant_id: 1,
         quantity: qty,
-        created_at: now.toISOString() // Передаем локальное время на сервер
+        created_at: now.toLocaleString('sv-SE') // Передаем локальное время на сервер
       });
       
       setSelectedProduct(null);
