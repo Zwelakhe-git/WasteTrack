@@ -92,42 +92,36 @@ async def get_waste_records(
 async def get_waste_grid(
     db: Annotated[AsyncSession, Depends(get_db)],
     restaurant_id: int,
-    date: str  # формат YYYY-MM-DD
+    date: str
 ):
-    """
-    Возвращает сгруппированные по часам данные о списаниях за конкретный день.
-    """
-    # Парсим дату и делаем границы дня
     target_date = datetime.strptime(date, "%Y-%m-%d").date()
-    start_dt = datetime.combine(target_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+    start_dt = datetime.combine(target_date, datetime.min.time())
     end_dt = start_dt + timedelta(days=1)
 
-    # Группируем по product_id и часу создания записи
+    # Теперь мы НЕ группируем по SQL, а достаем все записи за день
     query = (
-        select(
-            WasteRecord.product_id,
-            extract('hour', WasteRecord.created_at).label('hour'),
-            func.sum(WasteRecord.quantity).label('total_quantity')
-        )
+        select(WasteRecord)
+        .options(selectinload(WasteRecord.reason))
         .where(
             WasteRecord.restaurant_id == restaurant_id,
             WasteRecord.created_at >= start_dt,
             WasteRecord.created_at < end_dt
         )
-        .group_by(WasteRecord.product_id, extract('hour', WasteRecord.created_at))
     )
-    
     result = await db.execute(query)
-    rows = result.mappings().all()
+    records = result.scalars().all()
     
-    # Возвращаем в удобном для фронтенда формате
+    # Возвращаем список записей
     return [
         {
-            "product_id": row["product_id"],
-            "hour": int(row["hour"]),
-            "total_quantity": float(row["total_quantity"])
+            "id": r.id,
+            "product_id": r.product_id,
+            "reason_id": r.reason_id,
+            "reason_name": r.reason.name if r.reason else "",
+            "hour": r.created_at.hour,
+            "quantity": float(r.quantity)
         }
-        for row in rows
+        for r in records
     ]
 
 @router.delete("/{record_id}")
