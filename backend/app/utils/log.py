@@ -1,10 +1,10 @@
 from pathlib import Path
-from app.config import Settings
+from app.config import settings
 from datetime import datetime
 
 class Log:
     def __init__(self):
-        self.log_file_path = Settings.LOG_FILE
+        self.log_file_path = settings.LOG_FILE
         Path.touch(self.log_file_path)
 
     def info(self, msg: str):
