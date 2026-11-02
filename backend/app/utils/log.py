@@ -4,8 +4,9 @@ from datetime import datetime
 
 class Log:
     def __init__(self):
-        self.log_file_path = settings.LOG_FILE
-        Path.touch(self.log_file_path)
+        self.log_file_path: Path = Path(settings.LOG_FILE)
+        self.log_file_path.parent.mkdir(parents=True, exist_ok=True)
+        Path.touch(self.log_file_path, exist_ok=True)
 
     def info(self, msg: str):
         with open(self.log_file_path, '+w') as f:
