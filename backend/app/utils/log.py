@@ -9,12 +9,12 @@ class Log:
 
     def info(self, msg: str):
         with open(self.log_file_path, '+w') as f:
-            f.write(f"{datetime()} [INFO] {msg}\n")
-            
+            f.write(f"{datetime.now().isoformat()} [INFO] {msg}\n")
+
     def error(self, msg: str):
             with open(self.log_file_path, '+w') as f:
-                f.write(f"{datetime()} [ERROR] {msg}\n")
+                f.write(f"{datetime.now().isoformat()} [ERROR] {msg}\n")
 
     def warn(self, msg: str):
             with open(self.log_file_path, 'a+') as f:
-                f.write(f"{datetime()} [WARN] {msg}\n")
+                f.write(f"{datetime.now().isoformat()} [WARN] {msg}\n")
