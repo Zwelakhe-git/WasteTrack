@@ -12,7 +12,7 @@ class WasteRecordCreate(BaseModel):
     created_at: str | None = None
     # restaurant_id сюда НЕ входит, он берется из сессии
 
-class WasteRecordUpdapte(BaseModel):
+class WasteRecordUpdate(BaseModel):
     record_id: int
     quantity: int
 
