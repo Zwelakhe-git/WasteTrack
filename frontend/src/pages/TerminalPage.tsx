@@ -12,10 +12,22 @@ interface Reason {
   name: string;
 }
 
+interface GridRecord {
+  id: number,
+  product_id?: number,
+  reason_id: number,
+  reason_name?: string,
+  hour?: number,
+  quantity: number,
+}
+
 // Новая структура для хранения деталей в ячейке
 interface CellDetails {
   total: number;
-  records: { id: number; reason_id: number; reason_name: string; quantity: number }[];
+  records: GridRecord[];
+  groupedReasons: {
+    [reason_id: string]: number 
+  }
 }
 
 export default function TerminalPage() {
@@ -27,7 +39,7 @@ export default function TerminalPage() {
   
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
-  const [cellRecords, setCellRecords] = useState<CellDetails['records']>([]); // Записи в текущей ячейке
+  const [cellRecords, setCellRecords] = useState<GridRecord[]>([]); // Записи в текущей ячейке
   
   const [quantity, setQuantity] = useState<string>('');
   const [selectedReason, setSelectedReason] = useState<number | ''>('');
@@ -52,13 +64,17 @@ export default function TerminalPage() {
       
       // Группируем данные на клиенте
       const newGrid: Record<string, CellDetails> = {};
-      records.forEach((r: any) => {
+      records.forEach((r: GridRecord) => {
         const key = `${r.product_id}-${r.hour}`;
         if (!newGrid[key]) {
-          newGrid[key] = { total: 0, records: [] };
+          newGrid[key] = { total: 0, records: [], groupedReasons: {} };
+        }
+        if(!newGrid[key].groupedReasons[`${r.reason_id}`]){
+          newGrid[key].groupedReasons[`${r.reason_id}`] = 0;
         }
         newGrid[key].total += r.quantity;
         newGrid[key].records.push(r);
+        newGrid[key].groupedReasons[`${r.reason_id}`] += r.quantity;
       });
       
       setGridData(newGrid);
@@ -98,6 +114,9 @@ export default function TerminalPage() {
       // Формируем дату с нужным часом (локальное время)
       const now = new Date();
       now.setHours(selectedHour, 0, 0, 0); // Ставим выбранный час
+      if(selectedHour > (new Date().getHours())){
+        return;
+      }
 
       await terminalApi.createWaste({
         product_id: selectedProduct.id,
@@ -113,6 +132,14 @@ export default function TerminalPage() {
       alert('Ошибка при списании');
     }
   };
+  const handleSelectedReaonChange = (reasonId: number) => {
+    setSelectedReason(reasonId);
+    if(selectedProduct && selectedHour){
+      if(gridData[`${selectedProduct.id}-${selectedHour}`].groupedReasons[reasonId] > 0){
+        setQuantity(gridData[`${selectedProduct.id}-${selectedHour}`].groupedReasons[reasonId].toString());
+      }
+    }
+  }
 
   return (
     <div style={{ padding: 20, fontFamily: 'sans-serif', background: '#f5f5f5', minHeight: '100vh', overflowX: 'auto' }}>
@@ -176,8 +203,8 @@ export default function TerminalPage() {
               <div style={{ background: '#f8f9fa', padding: 10, borderRadius: 8, marginBottom: 20, fontSize: 14 }}>
                 <strong>Детализация за этот час:</strong>
                 <ul style={{ margin: '5px 0 0 0', paddingLeft: 20 }}>
-                  {cellRecords.map(r => (
-                    <li key={r.id}>{r.reason_name}: <b>{r.quantity}</b></li>
+                  {Object.entries(gridData[`${selectedProduct.id}-${selectedHour}`].groupedReasons).map(r => (
+                    <li key={r[0]}>{reasons.find(reason => reason.id === Number(r[0]))?.name}: <b>{r[1]}</b></li>
                   ))}
                 </ul>
               </div>
@@ -197,7 +224,7 @@ export default function TerminalPage() {
               <label style={{ display: 'block', marginBottom: 5 }}>Причина:</label>
               <select 
                 value={selectedReason} 
-                onChange={(e) => setSelectedReason(Number(e.target.value))}
+                onChange={(e) => handleSelectedReaonChange(Number(e.target.value))}
                 style={{ width: '100%', padding: 12, fontSize: 16, borderRadius: 6, border: '1px solid #ccc' }}
               >
                 <option value="">-- Выберите причину --</option>
