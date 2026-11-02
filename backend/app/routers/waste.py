@@ -121,18 +121,17 @@ async def get_waste_records(
     result = await db.execute(query.order_by(WasteRecord.created_at.desc()))
     return result.scalars().all()
 
-
 @router.get("/grid")
 async def get_waste_grid(
     db: Annotated[AsyncSession, Depends(get_db)],
     restaurant_id: int,
     date: str
 ):
+    from datetime import datetime, timedelta
     target_date = datetime.strptime(date, "%Y-%m-%d").date()
     start_dt = datetime.combine(target_date, datetime.min.time())
     end_dt = start_dt + timedelta(days=1)
 
-    # Теперь мы НЕ группируем по SQL, а достаем все записи за день
     query = (
         select(WasteRecord)
         .options(selectinload(WasteRecord.reason))
@@ -145,7 +144,6 @@ async def get_waste_grid(
     result = await db.execute(query)
     records = result.scalars().all()
     
-    # Возвращаем список записей
     return [
         {
             "id": r.id,
@@ -162,13 +160,15 @@ async def get_waste_grid(
 async def delete_waste_record(
     record_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current_user: Annotated[User, Depends(get_current_user)]
+    terminal_key: Annotated[str, Depends(verify_terminal_key)] # Защищаем ключом терминала
 ):
-    """Удаление ошибочной записи (если менеджер нажал 0)"""
+    """Удаление ошибочной записи (когда сотрудник вводит 0)"""
     result = await db.execute(select(WasteRecord).where(WasteRecord.id == record_id))
     record = result.scalars().first()
-    if record:
-        await db.delete(record)
-        await db.commit()
-        return {"status": "deleted"}
-    return {"status": "not found"}
+    
+    if not record:
+        raise HTTPException(status_code=404, detail="Record not found")
+        
+    await db.delete(record)
+    await db.commit()
+    return {"status": "deleted"}

@@ -1,9 +1,8 @@
 import axios from 'axios';
 
 const API_BASE = "http://localhost:3020/api";
-const TERMINAL_KEY = "secret_terminal_key"; // Должен совпадать с .env на бэкенде
+const TERMINAL_KEY = "secret_terminal_key";
 
-// Отдельный клиент для терминала
 const terminalClient = axios.create({
   baseURL: API_BASE,
   headers: {
@@ -13,20 +12,14 @@ const terminalClient = axios.create({
 });
 
 export const terminalApi = {
-  // Получаем только активные продукты
-  getProducts: async () => {
-    const res = await terminalClient.get('/products/'); 
+  createWaste: async (data: { product_id: number; reason_id: number; restaurant_id: number; quantity: number; created_at?: string }) => {
+    const res = await terminalClient.post('/waste/', data);
     return res.data;
   },
   
-  getReasons: async () => {
-    const res = await terminalClient.get('/reasons');
-    return res.data;
-  },
-
-  createWaste: async (data: { product_id: number; reason_id: number; restaurant_id: number; quantity: number; comment?: string, created_at?: string }) => {
-    console.log(`creating waste at ${data.created_at ?? ''}`);
-    const res = await terminalClient.post('/waste/', data);
+  // Добавили метод удаления
+  deleteWaste: async (recordId: number) => {
+    const res = await terminalClient.delete(`/waste/${recordId}`);
     return res.data;
   }
 };
