@@ -13,7 +13,7 @@ from app.models.product import Product
 from app.models.reason import Reason
 from app.models.restaurant import Restaurant
 from app.models.user import User
-from app.schemas.waste import WasteRecordCreate, WasteRecordRead
+from app.schemas.waste import WasteRecordCreate, WasteRecordRead, WasteRecordUpdate
 from app.core.deps import get_current_user
 from app.utils.utils import parse_js_iso
 from app.utils.log import Log
@@ -49,26 +49,26 @@ async def create_waste_record(
     if not restaurant:
         raise HTTPException(status_code=400, detail="Restaurant not found")
 
-    existing_record = (await db.execute(select(WasteRecord)
+    record = (await db.execute(select(WasteRecord)
                                         .where(WasteRecord.created_at == waste_in.created_at,
                                                WasteRecord.reason_id == waste_in.reason_id))).scalars().first()
-    if existing_record:
+    if record:
         log.info("updating existing record")
-        existing_record.quantity = waste_in.quantity
-
-    new_record = WasteRecord(
-        product_id=waste_in.product_id,
-        reason_id=waste_in.reason_id,
-        restaurant_id=waste_in.restaurant_id,
-        quantity=waste_in.quantity,
-        comment=waste_in.comment,
-        photo_urls=waste_in.photo_urls,
-        created_by_id=None # Сотрудник кухни анонимен
-    )
-    log.info(f"BEACON!! creating record at {waste_in.created_at} and NOW")
-    if waste_in.created_at:
-        new_record.created_at = datetime.fromisoformat(waste_in.created_at)
-    db.add(new_record)
+        record.quantity = waste_in.quantity
+    else:
+        record = WasteRecord(
+            product_id=waste_in.product_id,
+            reason_id=waste_in.reason_id,
+            restaurant_id=waste_in.restaurant_id,
+            quantity=waste_in.quantity,
+            comment=waste_in.comment,
+            photo_urls=waste_in.photo_urls,
+            created_by_id=None # Сотрудник кухни анонимен
+        )
+        log.info(f"BEACON!! creating record at {waste_in.created_at} and NOW")
+        if waste_in.created_at:
+            record.created_at = datetime.fromisoformat(waste_in.created_at)
+        db.add(record)
     await db.commit()
 
     # Загружаем созданную запись со связями для ответа
@@ -76,9 +76,23 @@ async def create_waste_record(
         select(WasteRecord)
         .options(selectinload(WasteRecord.product).selectinload(Product.unit),
                  selectinload(WasteRecord.reason))
-        .where(WasteRecord.id == new_record.id)
+        .where(WasteRecord.id == record.id)
     )
     return result.scalars().first()
+
+@router.post("/update", response_model=WasteRecordRead)
+async def update_record(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    waste_in: WasteRecordUpdate
+):
+    log.info(f"updating record {waste_in.record_id}")
+    record = (await db.get(WasteRecord, waste_in.record_id)).scalars().first()
+    if not record:
+        raise HTTPException(status_code=404, detail="record not found")
+    record.quantity = waste_in.quantity
+    await db.commit()
+
+    return record
 
 @router.get("/", response_model=List[WasteRecordRead])
 async def get_waste_records(
