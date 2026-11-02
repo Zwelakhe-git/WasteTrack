@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
+from pathlib import Path
 
 class Settings(BaseSettings):
     APP_NAME: str = "WasteTrack"
@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
     TERMINAL_API_KEY: str = "secret_terminal_key"
+
+    LOG_FILE: str = Path(__file__).parent / "../logs/log.log"
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -16,6 +16,9 @@ from app.models.user import User
 from app.schemas.waste import WasteRecordCreate, WasteRecordRead
 from app.core.deps import get_current_user
 from app.utils.utils import parse_js_iso
+from app.utils.log import Log
+
+log = Log()
 
 router = APIRouter(prefix="/waste", tags=["Waste Records"])
 
@@ -46,6 +49,13 @@ async def create_waste_record(
     if not restaurant:
         raise HTTPException(status_code=400, detail="Restaurant not found")
 
+    existing_record = (await db.execute(select(WasteRecord)
+                                        .where(WasteRecord.created_at == waste_in.created_at,
+                                               WasteRecord.reason_id == waste_in.reason_id))).scalars().first()
+    if existing_record:
+        log.info("updating existing record")
+        existing_record.quantity = waste_in.quantity
+
     new_record = WasteRecord(
         product_id=waste_in.product_id,
         reason_id=waste_in.reason_id,
@@ -55,7 +65,7 @@ async def create_waste_record(
         photo_urls=waste_in.photo_urls,
         created_by_id=None # Сотрудник кухни анонимен
     )
-    print(f"BEACON!! creating record at {waste_in.created_at} and NOW")
+    log.info(f"BEACON!! creating record at {waste_in.created_at} and NOW")
     if waste_in.created_at:
         new_record.created_at = datetime.fromisoformat(waste_in.created_at)
     db.add(new_record)
