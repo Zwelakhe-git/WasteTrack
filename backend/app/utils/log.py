@@ -19,3 +19,5 @@ class Log:
     def warn(self, msg: str):
             with open(self.log_file_path, 'a+') as f:
                 f.write(f"{datetime.now().isoformat()} [WARN] {msg}\n")
+
+log = Log()

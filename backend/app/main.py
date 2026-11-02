@@ -7,6 +7,7 @@ from app.init_db import create_first_admin, create_initial_units
 from app.routers import auth, restaurant, product, waste, analytics, reason
 
 import logging
+from app.utils.log import log
 
 logging.basicConfig(level=logging.INFO)
 
@@ -37,6 +38,7 @@ app.add_middleware(
 
 @app.get("/api/health", tags=["system"])
 async def health_check():
+    log.info("info log")
     return {"status": "ok", "app": settings.APP_NAME}
 
 app.include_router(auth.router, prefix="/api")

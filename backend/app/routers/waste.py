@@ -50,14 +50,20 @@ async def create_waste_record(
         raise HTTPException(status_code=400, detail="Restaurant not found")
     
     record = None
-    try:
-        record = (await db.execute(select(WasteRecord)
-                                        .where(WasteRecord.created_at == waste_in.created_at,
-                                          WasteRecord.reason_id == waste_in.reason_id))).scalars().one_or_none()
-    except Exception as e:
-        log.error(f"error: {e}")
+    created_at = (
+        datetime.fromisoformat(waste_in.created_at)
+        if isinstance(waste_in.created_at, str)
+        else waste_in.created_at
+    )
+
+    record = (await db.execute(
+        select(WasteRecord).where(
+            WasteRecord.created_at == created_at,
+            WasteRecord.reason_id == waste_in.reason_id,
+        )
+    )).scalars().first()
     if record:
-        log.info("updating existing record")
+        print("updating existing record")
         record.quantity = waste_in.quantity
     else:
         record = WasteRecord(
