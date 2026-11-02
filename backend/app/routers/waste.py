@@ -53,7 +53,7 @@ async def create_waste_record(
     try:
         record = (await db.execute(select(WasteRecord)
                                         .where(WasteRecord.created_at == waste_in.created_at,
-                                           WasteRecord.reason_id == waste_in.reason_id))).scalars().first()
+                                          WasteRecord.reason_id == waste_in.reason_id))).scalars().one_or_none()
     except Exception as e:
         log.error(f"error: {e}")
     if record:
