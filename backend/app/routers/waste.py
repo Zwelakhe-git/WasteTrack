@@ -60,10 +60,11 @@ async def create_waste_record(
         select(WasteRecord).where(
             WasteRecord.created_at == created_at,
             WasteRecord.reason_id == waste_in.reason_id,
+            WasteRecord.product_id == waste_in.product_id,
+            WasteRecord.restaurant_id == waste_in.restaurant_id
         )
     )).scalars().first()
     if record:
-        print("updating existing record")
         record.quantity = waste_in.quantity
     else:
         record = WasteRecord(
@@ -95,8 +96,20 @@ async def update_record(
     db: Annotated[AsyncSession, Depends(get_db)],
     waste_in: WasteRecordUpdate
 ):
-    log.info(f"updating record {waste_in.record_id}")
-    record = (await db.get(WasteRecord, waste_in.record_id)).scalars().first()
+    created_at = (
+        datetime.fromisoformat(waste_in.created_at)
+        if isinstance(waste_in.created_at, str)
+        else waste_in.created_at
+    )
+
+    record = (await db.execute(
+        select(WasteRecord).where(
+            WasteRecord.created_at == created_at,
+            WasteRecord.reason_id == waste_in.reason_id,
+            WasteRecord.product_id == waste_in.product_id,
+            WasteRecord.restaurant_id == waste_in.restaurant_id
+        )
+    )).scalars().first()
     if not record:
         raise HTTPException(status_code=404, detail="record not found")
     record.quantity = waste_in.quantity

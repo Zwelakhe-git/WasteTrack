@@ -156,8 +156,9 @@ export default function TerminalPage() {
   const handleSelectedReaonChange = (reasonId: number) => {
     setSelectedReason(reasonId);
     if(selectedProduct && selectedHour){
-      if(gridData[`${selectedProduct.id}-${selectedHour}`].groupedReasons[reasonId] > 0){
-        setQuantity(gridData[`${selectedProduct.id}-${selectedHour}`].groupedReasons[reasonId].toString());
+      const details = gridData[`${selectedProduct.id}-${selectedHour}`].groupedReasons;
+      if(details && details[reasonId] > 0){
+        setQuantity(details[reasonId].toString());
       }
     }
   }

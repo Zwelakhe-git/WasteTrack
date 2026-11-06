@@ -15,6 +15,9 @@ class WasteRecordCreate(BaseModel):
 class WasteRecordUpdate(BaseModel):
     record_id: int
     quantity: int
+    product_id: int
+    restaurant_id: int
+    created_at: str
 
 class WasteRecordRead(BaseModel):
     id: int
