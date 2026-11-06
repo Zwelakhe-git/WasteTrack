@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { terminalApi } from '../api/terminal';
+import { RESTAURANT_ID } from '../config';
 
 interface Product {
   id: number;
@@ -50,17 +51,15 @@ export default function TerminalPage() {
 
   const loadData = async () => {
     try {
-      const [resP, resR] = await Promise.all([
-        fetch('http://localhost:3020/api/products/'),
-        fetch('http://localhost:3020/api/reasons/')
-      ]);
-      setProducts(await resP.json());
-      setReasons(await resR.json());
-
       // Берем локальную дату клиента (YYYY-MM-DD)
-      const today = new Date().toLocaleDateString('sv-SE'); 
-      const resGrid = await fetch(`http://localhost:3020/api/waste/grid?restaurant_id=1&date=${today}`);
-      const records = await resGrid.json();
+      const today = new Date().toLocaleDateString('sv-SE');
+      const [productsData, reasonsData, records] = await Promise.all([
+        terminalApi.getProducts(),
+        terminalApi.getReasons(),
+        terminalApi.getGrid(RESTAURANT_ID, today)
+      ]);
+      setProducts(productsData);
+      setReasons(reasonsData);
       
       // Группируем данные на клиенте
       const newGrid: Record<string, CellDetails> = {};
@@ -94,13 +93,9 @@ export default function TerminalPage() {
     setSelectedHour(hour);
     
     const details = gridData[`${product.id}-${hour}`];
-    if (details) {
-      setQuantity(details.total.toString());
-      setCellRecords(details.records); // Сохраняем записи для отображения деталей
-    } else {
-      setQuantity('1');
-      setCellRecords([]);
-    }
+    // Количество подставляется после выбора причины (см. handleSelectedReasonChange)
+    setQuantity('1');
+    setCellRecords(details ? details.records : []);
     setSelectedReason('');
   };
 
@@ -111,38 +106,38 @@ export default function TerminalPage() {
     if (isNaN(qty)) return alert('Некорректное количество');
 
     try {
+      if (qty < 0) return alert('Количество не может быть отрицательным');
+
       if (qty === 0) {
-        if (cellRecords.length === 0) {
-          setSelectedProduct(null);
-          return; // Нечего удалять
-        }
-        
-        const confirmDelete = window.confirm(`Вы уверены, что хотите отменить списание за этот час?`);
+        // Отменяем списание только по выбранной причине
+        const target: GridRecord | undefined = cellRecords.find(r => r.reason_id === Number(selectedReason));
+        if (!target) return alert('По этой причине за этот час списаний нет');
+
+        const reasonName = reasons.find(r => r.id === Number(selectedReason))?.name ?? '';
+        const confirmDelete = window.confirm(`Отменить списание по причине «${reasonName}» за ${selectedHour}:00?`);
         if (!confirmDelete) return;
 
-        // Удаляем все записи в этой ячейке
-        const target: GridRecord | undefined = cellRecords.find(r => r.reason_id == selectedReason);
-        if(target){
-          await terminalApi.deleteWaste(target.id);
-        }
-          
+        await terminalApi.deleteWaste(target.id);
+
         setSelectedProduct(null);
         loadData();
         return;
       }
 
       
+      // Нельзя списывать в час, который ещё не наступил
+      if (selectedHour > new Date().getHours()) {
+        return alert('Этот час ещё не наступил');
+      }
+
       // Формируем дату с нужным часом (локальное время)
       const now = new Date();
       now.setHours(selectedHour, 0, 0, 0); // Ставим выбранный час
-      if(selectedHour > (new Date().getHours())){
-        return;
-      }
 
       await terminalApi.createWaste({
         product_id: selectedProduct.id,
         reason_id: Number(selectedReason),
-        restaurant_id: 1,
+        restaurant_id: RESTAURANT_ID,
         quantity: qty,
         created_at: now.toLocaleString('sv-SE') // Передаем локальное время на сервер
       });
@@ -150,17 +145,17 @@ export default function TerminalPage() {
       setSelectedProduct(null);
       loadData();
     } catch (error) {
+      console.error(error);
       alert('Ошибка при списании');
     }
   };
-  const handleSelectedReaonChange = (reasonId: number) => {
+  const handleSelectedReasonChange = (reasonId: number) => {
     setSelectedReason(reasonId);
-    if(selectedProduct && selectedHour){
-      const details = gridData[`${selectedProduct.id}-${selectedHour}`].groupedReasons;
-      if(details && details[reasonId] > 0){
-        setQuantity(details[reasonId].toString());
-      }
-    }
+    if (!selectedProduct || selectedHour === null) return;
+    // Если по этой причине в этом часе уже есть списание — показываем его количество,
+    // иначе начинаем с 1 (в пустой ячейке gridData[...] нет, поэтому через ?.)
+    const existing = gridData[`${selectedProduct.id}-${selectedHour}`]?.groupedReasons[`${reasonId}`];
+    setQuantity(existing && existing > 0 ? existing.toString() : '1');
   }
 
   return (
@@ -233,7 +228,7 @@ export default function TerminalPage() {
             )}
             
             <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', marginBottom: 5 }}>Добавить количество ({selectedProduct.unit.name}):</label>
+              <label style={{ display: 'block', marginBottom: 5 }}>Количество ({selectedProduct.unit.name}), 0 — отменить:</label>
               <input 
                 type="number" 
                 value={quantity} 
@@ -246,7 +241,7 @@ export default function TerminalPage() {
               <label style={{ display: 'block', marginBottom: 5 }}>Причина:</label>
               <select 
                 value={selectedReason} 
-                onChange={(e) => handleSelectedReaonChange(Number(e.target.value))}
+                onChange={(e) => handleSelectedReasonChange(Number(e.target.value))}
                 style={{ width: '100%', padding: 12, fontSize: 16, borderRadius: 6, border: '1px solid #ccc' }}
               >
                 <option value="">-- Выберите причину --</option>

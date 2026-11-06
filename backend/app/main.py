@@ -42,7 +42,6 @@ async def health_check():
     return {"status": "ok", "app": settings.APP_NAME}
 
 app.include_router(auth.router, prefix="/api")
-app.include_router(auth.router, prefix="/api")
 app.include_router(restaurant.router, prefix="/api")
 app.include_router(product.router, prefix="/api")
 app.include_router(waste.router, prefix="/api")

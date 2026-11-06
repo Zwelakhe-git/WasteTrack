@@ -9,15 +9,15 @@ class Log:
         Path.touch(self.log_file_path, exist_ok=True)
 
     def info(self, msg: str):
-        with open(self.log_file_path, '+w') as f:
+        with open(self.log_file_path, 'a', encoding='utf-8') as f:
             f.write(f"{datetime.now().isoformat()} [INFO] {msg}\n")
 
     def error(self, msg: str):
-            with open(self.log_file_path, '+w') as f:
+            with open(self.log_file_path, 'a', encoding='utf-8') as f:
                 f.write(f"{datetime.now().isoformat()} [ERROR] {msg}\n")
 
     def warn(self, msg: str):
-            with open(self.log_file_path, 'a+') as f:
+            with open(self.log_file_path, 'a', encoding='utf-8') as f:
                 f.write(f"{datetime.now().isoformat()} [WARN] {msg}\n")
 
 log = Log()

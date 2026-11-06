@@ -1,23 +1,22 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from decimal import Decimal
 from datetime import datetime
+
 
 class WasteRecordCreate(BaseModel):
     product_id: int
     reason_id: int
     restaurant_id: int
-    quantity: Decimal
+    quantity: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
     comment: str | None = None
     photo_urls: list[str] | None = None
+    # Локальное время ресторана, например '2026-11-06 10:00:00'
     created_at: str | None = None
-    # restaurant_id сюда НЕ входит, он берется из сессии
+
 
 class WasteRecordUpdate(BaseModel):
-    record_id: int
-    quantity: int
-    product_id: int
-    restaurant_id: int
-    created_at: str
+    quantity: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
+
 
 class WasteRecordRead(BaseModel):
     id: int

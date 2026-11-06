@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
-from datetime import datetime, timedelta
+from datetime import timedelta
 import io
 import pandas as pd
 from fastapi.responses import StreamingResponse
@@ -14,7 +14,7 @@ from app.models.user import User
 from app.models.reason import Reason
 from app.models.product import Product
 from app.schemas.analytics import AnalyticsSummary, ReasonStat, ProductStat
-from app.routers.product import get_current_manager_or_admin # Переиспользуем проверку роли
+from app.utils.utils import get_current_manager_or_admin, wall_clock_now
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
@@ -26,7 +26,7 @@ async def get_analytics_summary(
     days: int = 7 # По умолчанию аналитика за последние 7 дней
 ):
     # Определяем временной промежуток
-    start_date = datetime.utcnow() - timedelta(days=days)
+    start_date = wall_clock_now() - timedelta(days=days)
     
     # Базовый фильтр
     base_filter = [WasteRecord.created_at >= start_date]
@@ -87,7 +87,7 @@ async def export_waste_records(
     restaurant_id: int | None = None,
     days: int = 30
 ):
-    start_date = datetime.utcnow() - timedelta(days=days)
+    start_date = wall_clock_now() - timedelta(days=days)
     
     query = (
         select(
