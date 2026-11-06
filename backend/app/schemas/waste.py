@@ -25,6 +25,7 @@ class WasteRecordRead(BaseModel):
     restaurant_id: int
     created_by_id: int | None = None
     quantity: Decimal
+    unit_cost: Decimal | None = None
     comment: str | None = None
     photo_urls: list[str] | None = None
     created_at: datetime

@@ -1,5 +1,6 @@
 import enum
-from sqlalchemy import String, ForeignKey, Enum as SQLEnum
+from decimal import Decimal
+from sqlalchemy import String, ForeignKey, Numeric, Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 from app.models.base import TimestampMixin
@@ -25,6 +26,9 @@ class Product(Base, TimestampMixin):
     status: Mapped[ProductStatus] = mapped_column(SQLEnum(ProductStatus, values_callable=lambda obj: [e.value for e in obj]), default=ProductStatus.ACTIVE, nullable=False)
     
     unit_id: Mapped[int] = mapped_column(ForeignKey("units.id"), nullable=False)
+
+    # Себестоимость одной единицы измерения продукта, руб. (за 1 шт, 1 кг, 1 л ...)
+    cost: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False, default=0, server_default="0")
 
     # Связи
     unit: Mapped["Unit"] = relationship(back_populates="products")

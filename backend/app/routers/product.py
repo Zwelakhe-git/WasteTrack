@@ -6,7 +6,7 @@ from sqlalchemy.future import select
 from app.database import get_db
 from app.models.user import User, UserRole
 from app.models.product import Product, Unit, ProductStatus
-from app.schemas.product import ProductCreate, ProductRead, UnitRead
+from app.schemas.product import ProductCreate, ProductRead, ProductUpdate, UnitRead
 from app.core.deps import get_current_user
 from sqlalchemy.orm import selectinload
 
@@ -54,5 +54,31 @@ async def create_product(
         select(Product)
         .options(selectinload(Product.unit)) # <--- Говорим сразу подгрузить Unit
         .where(Product.id == new_product.id)
+    )
+    return result.scalars().first()
+
+
+@router.patch("/{product_id}", response_model=ProductRead)
+async def update_product(
+    product_id: int,
+    product_in: ProductUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_manager_or_admin)]
+):
+    """Изменение продукта: название, категория, единица, статус (заморозка), себестоимость."""
+    product = await db.get(Product, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    changes = product_in.model_dump(exclude_unset=True)
+    if "unit_id" in changes and not await db.get(Unit, changes["unit_id"]):
+        raise HTTPException(status_code=400, detail="Unit not found")
+
+    for field, value in changes.items():
+        setattr(product, field, value)
+    await db.commit()
+
+    result = await db.execute(
+        select(Product).options(selectinload(Product.unit)).where(Product.id == product_id)
     )
     return result.scalars().first()

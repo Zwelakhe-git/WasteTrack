@@ -15,6 +15,9 @@ class WasteRecord(Base, TimestampMixin):
     created_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True) # Может быть NULL, если списал сотрудник без входа
 
     quantity: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False) # до 2 знаков после запятой
+    # Себестоимость единицы на момент списания: если цену продукта потом изменят,
+    # сумма старых списаний не пересчитается. NULL — для записей, созданных до появления поля.
+    unit_cost: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
     comment: Mapped[str | None] = mapped_column(String(500), nullable=True)
     
     # Сохраняем список URL фото в формате JSON-массива

@@ -1,3 +1,6 @@
+export const formatRub = (value: number | string) =>
+  Number(value).toLocaleString('ru-RU', { style: 'currency', currency: 'RUB', maximumFractionDigits: 2 });
+
 export default function AnalyticsCards({ data }: { data: any }) {
   if (!data) return null;
 
@@ -19,9 +22,9 @@ export default function AnalyticsCards({ data }: { data: any }) {
         </p>
       </div>
       <div style={cardStyle}>
-        <h3 style={{ margin: 0, color: '#666', fontSize: '14px' }}>Общий объём списаний</h3>
+        <h3 style={{ margin: 0, color: '#666', fontSize: '14px' }}>Сумма потерь (по себестоимости)</h3>
         <p style={{ margin: '10px 0 0', fontSize: '32px', fontWeight: 'bold', color: '#d9534f' }}>
-          {data.total_quantity}
+          {formatRub(data.total_cost)}
         </p>
       </div>
     </div>
