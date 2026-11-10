@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
-    TERMINAL_API_KEY: str = "secret_terminal_key"
+    TERMINAL_API_KEY: str = "424b6b4c-7470-47d0-9077-739ea8e19626"
 
     # Смещение часового пояса ресторана от UTC (Москва = 3).
     # Терминал сохраняет время списаний «по настенным часам» ресторана,
