@@ -19,8 +19,8 @@ from app.utils.utils import get_current_manager_or_admin, wall_clock_now
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
 
-# Себестоимость единицы: зафиксированная в записи, а для старых записей — текущая из продукта
-UNIT_COST = func.coalesce(WasteRecord.unit_cost, Product.cost)
+# Себестоимость единицы: зафиксированная в записи, а если её нет (или 0) — текущая из продукта
+UNIT_COST = func.coalesce(func.nullif(WasteRecord.unit_cost, 0), Product.cost)
 # Сумма потерь по записи, руб.
 RECORD_COST = WasteRecord.quantity * UNIT_COST
 

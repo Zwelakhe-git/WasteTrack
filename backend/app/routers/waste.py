@@ -80,7 +80,9 @@ async def create_waste_record(
             reason_id=waste_in.reason_id,
             restaurant_id=waste_in.restaurant_id,
             quantity=waste_in.quantity,
-            unit_cost=product.cost,  # себестоимость на момент списания
+            # себестоимость на момент списания; пока цена не задана — пусто,
+            # заполнится, когда менеджер укажет цену в справочнике
+            unit_cost=product.cost if product.cost and product.cost > 0 else None,
             comment=waste_in.comment,
             photo_urls=waste_in.photo_urls,
             created_by_id=None  # Сотрудник кухни анонимен

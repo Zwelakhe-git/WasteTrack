@@ -44,22 +44,40 @@ export default function TerminalPage() {
   
   const [quantity, setQuantity] = useState<string>('');
   const [selectedReason, setSelectedReason] = useState<number | ''>('');
+  const [loadError, setLoadError] = useState<string>('');
   
   const START_HOUR = 10;
   const END_HOUR = 23;
   const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
 
+  const describeError = (what: string, error: any) => {
+    const status = error?.response?.status;
+    if (status === 401) return `${what}: неверный ключ терминала (VITE_TERMINAL_KEY не совпадает с TERMINAL_API_KEY)`;
+    if (!error?.response) return `${what}: сервер недоступен`;
+    return `${what}: ошибка ${status}`;
+  };
+
   const loadData = async () => {
-    try {
-      // Берем локальную дату клиента (YYYY-MM-DD)
-      const today = new Date().toLocaleDateString('sv-SE');
-      const [productsData, reasonsData, records] = await Promise.all([
-        terminalApi.getProducts(),
-        terminalApi.getReasons(),
-        terminalApi.getGrid(RESTAURANT_ID, today)
-      ]);
-      setProducts(productsData);
-      setReasons(reasonsData);
+    // Берем локальную дату клиента (YYYY-MM-DD)
+    const today = new Date().toLocaleDateString('sv-SE');
+    // Каждый запрос отдельно: если таблица не загрузилась, продукты всё равно видны
+    const [productsRes, reasonsRes, gridRes] = await Promise.allSettled([
+      terminalApi.getProducts(),
+      terminalApi.getReasons(),
+      terminalApi.getGrid(RESTAURANT_ID, today)
+    ]);
+
+    const errors: string[] = [];
+    if (productsRes.status === 'fulfilled') setProducts(productsRes.value);
+    else errors.push(describeError('Продукты', productsRes.reason));
+    if (reasonsRes.status === 'fulfilled') setReasons(reasonsRes.value);
+    else errors.push(describeError('Причины', reasonsRes.reason));
+    if (gridRes.status === 'rejected') errors.push(describeError('Списания за сегодня', gridRes.reason));
+    setLoadError(errors.join('; '));
+    if (errors.length) console.error('Ошибка загрузки', errors);
+
+    if (gridRes.status === 'fulfilled') {
+      const records: GridRecord[] = gridRes.value;
       
       // Группируем данные на клиенте
       const newGrid: Record<string, CellDetails> = {};
@@ -77,8 +95,6 @@ export default function TerminalPage() {
       });
       
       setGridData(newGrid);
-    } catch (error) {
-      console.error("Ошибка загрузки", error);
     }
   };
 
@@ -161,6 +177,11 @@ export default function TerminalPage() {
   return (
     <div style={{ padding: 20, fontFamily: 'sans-serif', background: '#f5f5f5', minHeight: '100vh', overflowX: 'auto' }}>
       <h1 style={{ textAlign: 'center' }}>Терминал кухни</h1>
+      {loadError && (
+        <div style={{ background: '#f8d7da', color: '#721c24', padding: 12, borderRadius: 8, marginBottom: 15 }}>
+          {loadError}
+        </div>
+      )}
 
       <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
         <thead>

@@ -2,10 +2,12 @@ from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import update, or_
 
 from app.database import get_db
 from app.models.user import User, UserRole
 from app.models.product import Product, Unit, ProductStatus
+from app.models.waste_record import WasteRecord
 from app.schemas.product import ProductCreate, ProductRead, ProductUpdate, UnitRead
 from app.core.deps import get_current_user
 from sqlalchemy.orm import selectinload
@@ -76,6 +78,18 @@ async def update_product(
 
     for field, value in changes.items():
         setattr(product, field, value)
+
+    # Списания, сделанные до того, как у продукта появилась цена (unit_cost пустой или 0),
+    # получают новую себестоимость. Записи с уже зафиксированной ценой не меняются.
+    if changes.get("cost") is not None and changes["cost"] > 0:
+        await db.execute(
+            update(WasteRecord)
+            .where(
+                WasteRecord.product_id == product_id,
+                or_(WasteRecord.unit_cost.is_(None), WasteRecord.unit_cost == 0),
+            )
+            .values(unit_cost=changes["cost"])
+        )
     await db.commit()
 
     result = await db.execute(
