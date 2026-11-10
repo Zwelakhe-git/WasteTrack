@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { terminalApi } from '../api/terminal';
 import { RESTAURANT_ID } from '../config';
+import { matchesQuery } from '../utils/search';
 
 interface Product {
   id: number;
   name: string;
+  category?: string;
   unit: { name: string };
 }
 
@@ -45,6 +47,13 @@ export default function TerminalPage() {
   const [quantity, setQuantity] = useState<string>('');
   const [selectedReason, setSelectedReason] = useState<number | ''>('');
   const [loadError, setLoadError] = useState<string>('');
+  const [search, setSearch] = useState<string>('');
+
+  // Продукты, подходящие под поисковый запрос (по названию и категории)
+  const visibleProducts = useMemo(
+    () => products.filter(p => matchesQuery(search, p.name, p.category)),
+    [products, search]
+  );
   
   const START_HOUR = 10;
   const END_HOUR = 23;
@@ -183,6 +192,32 @@ export default function TerminalPage() {
         </div>
       )}
 
+      {/* Поиск продуктов */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 15 }}>
+        <div style={{ position: 'relative', flex: 1, maxWidth: 500 }}>
+          <input
+            type="search"
+            placeholder="Поиск продукта: название или категория"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Escape') setSearch(''); }}
+            style={{ width: '100%', boxSizing: 'border-box', padding: '14px 44px 14px 14px', fontSize: 18, borderRadius: 8, border: '1px solid #ccc' }}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              aria-label="Очистить поиск"
+              style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', width: 34, height: 34, border: 'none', borderRadius: 6, background: '#e0e0e0', fontSize: 18, cursor: 'pointer' }}
+            >
+              ✕
+            </button>
+          )}
+        </div>
+        {search && (
+          <span style={{ color: '#666' }}>Найдено: {visibleProducts.length} из {products.length}</span>
+        )}
+      </div>
+
       <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
         <thead>
           <tr>
@@ -195,7 +230,14 @@ export default function TerminalPage() {
           </tr>
         </thead>
         <tbody>
-          {products.map(product => (
+          {visibleProducts.length === 0 && (
+            <tr>
+              <td colSpan={hours.length + 1} style={{ padding: 20, textAlign: 'center', color: '#666', border: '1px solid #ccc' }}>
+                {search ? `Ничего не найдено по запросу «${search}»` : 'Нет активных продуктов'}
+              </td>
+            </tr>
+          )}
+          {visibleProducts.map(product => (
             <tr key={product.id}>
               <td 
                 style={{ border: '1px solid #ccc', padding: 10, fontWeight: 'bold', cursor: 'pointer', background: '#f9f9f9' }}
