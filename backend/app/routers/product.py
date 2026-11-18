@@ -103,13 +103,14 @@ async def delete_product(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_manager_or_admin)]
 ):
+    print(f"delete product {product_id}")
     product = await db.get(Product, product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     query = select(WasteRecord).options(
         selectinload(WasteRecord.product)
     )
-    waste_records = (await db.execute(query)).scalars().one()
+    waste_records = (await db.execute(query)).scalars().first()
     if waste_records:
         raise HTTPException(status_code=403, detail="Failed to delete product with records")
 
