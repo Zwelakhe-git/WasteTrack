@@ -107,14 +107,17 @@ async def delete_product(
     product = await db.get(Product, product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    query = select(WasteRecord).options(
-        selectinload(WasteRecord.product)
-    )
-    waste_records = (await db.execute(query)).scalars().first()
+    query = select(WasteRecord).where(WasteRecord.product_id == product_id)
+    waste_records = (await db.execute(query)).scalars().all()
+
     if waste_records:
-        raise HTTPException(status_code=403, detail="Failed to delete product with records")
+        raise HTTPException(
+            status_code=403,
+            detail=f"Failed to delete product with records: {len(waste_records)} waste record(s) reference it"
+        )
 
     await db.delete(product)
+    await db.commit()
     return {
         "status": True,
         "message": "Product successfully deleted"
