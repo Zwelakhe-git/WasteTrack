@@ -30,6 +30,15 @@ async def verify_terminal_key(x_terminal_key: str = Header(...)):
     return x_terminal_key
 
 
+def _require_comment(reason: Reason | None, comment: str | None) -> None:
+    """Для причин с флагом requires_comment (например, «Прочее») комментарий обязателен."""
+    if reason is not None and reason.requires_comment and not comment:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Для причины «{reason.name}» нужен комментарий"
+        )
+
+
 async def _load_record(db: AsyncSession, record_id: int) -> WasteRecord | None:
     result = await db.execute(
         select(WasteRecord)
@@ -58,6 +67,7 @@ async def create_waste_record(
         raise HTTPException(status_code=400, detail="Reason not found or frozen")
     if not restaurant:
         raise HTTPException(status_code=400, detail="Restaurant not found")
+    _require_comment(reason, waste_in.comment)
 
     created_at = parse_client_time(waste_in.created_at)
 
@@ -74,6 +84,8 @@ async def create_waste_record(
 
     if record:
         record.quantity = waste_in.quantity
+        if waste_in.comment is not None:
+            record.comment = waste_in.comment
     else:
         record = WasteRecord(
             product_id=waste_in.product_id,
@@ -102,11 +114,15 @@ async def update_waste_record(
     db: Annotated[AsyncSession, Depends(get_db)],
     terminal_key: Annotated[str, Depends(verify_terminal_key)]
 ):
-    """Изменение количества в существующей записи по её id."""
+    """Изменение количества (и комментария) в существующей записи по её id."""
     record = await db.get(WasteRecord, record_id)
     if not record:
         raise HTTPException(status_code=404, detail="Record not found")
+    reason = await db.get(Reason, record.reason_id)
+    new_comment = waste_in.comment if waste_in.comment is not None else record.comment
+    _require_comment(reason, new_comment)
     record.quantity = waste_in.quantity
+    record.comment = new_comment
     await db.commit()
     return await _load_record(db, record_id)
 
@@ -163,7 +179,8 @@ async def get_waste_grid(
             "reason_id": r.reason_id,
             "reason_name": r.reason.name if r.reason else "",
             "hour": r.created_at.astimezone(timezone.utc).hour,
-            "quantity": float(r.quantity)
+            "quantity": float(r.quantity),
+            "comment": r.comment
         }
         for r in records
     ]

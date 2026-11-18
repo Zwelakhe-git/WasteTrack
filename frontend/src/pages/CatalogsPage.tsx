@@ -19,6 +19,7 @@ export default function CatalogsPage() {
   // Состояния для формы добавления причины
   const [reasonName, setReasonName] = useState('');
   const [reasonDesc, setReasonDesc] = useState('');
+  const [reasonNeedsComment, setReasonNeedsComment] = useState(false);
 
   const loadData = async () => {
     const [p, r, u] = await Promise.all([
@@ -71,8 +72,8 @@ export default function CatalogsPage() {
   const handleAddReason = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await apiClient.post('/reasons/', { name: reasonName, description: reasonDesc });
-      setReasonName(''); setReasonDesc('');
+      await apiClient.post('/reasons/', { name: reasonName, description: reasonDesc, requires_comment: reasonNeedsComment });
+      setReasonName(''); setReasonDesc(''); setReasonNeedsComment(false);
       loadData();
       alert('Причина добавлена');
     } catch (err) { alert('Ошибка добавления причины'); }
@@ -152,6 +153,10 @@ export default function CatalogsPage() {
           <form onSubmit={handleAddReason} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
             <input placeholder="Название причины" value={reasonName} onChange={e => setReasonName(e.target.value)} required style={{ padding: 10 }} />
             <input placeholder="Описание" value={reasonDesc} onChange={e => setReasonDesc(e.target.value)} style={{ padding: 10 }} />
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input type="checkbox" checked={reasonNeedsComment} onChange={e => setReasonNeedsComment(e.target.checked)} />
+              Требует комментарий при списании (как «Прочее»)
+            </label>
             <button type="submit" style={{ padding: 10, background: '#28a745', color: '#fff', border: 'none', borderRadius: 6 }}>Добавить причину</button>
           </form>
 

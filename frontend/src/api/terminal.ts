@@ -15,6 +15,7 @@ export interface WasteCreatePayload {
   reason_id: number;
   restaurant_id: number;
   quantity: number;
+  comment?: string;
   created_at?: string;
 }
 

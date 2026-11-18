@@ -1,9 +1,9 @@
-from typing import Annotated
+from typing import Annotated, Literal
 from datetime import timedelta
 import io
 
 import pandas as pd
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -101,8 +101,10 @@ async def export_waste_records(
     db: Annotated[AsyncSession, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_manager_or_admin)],
     restaurant_id: int | None = None,
-    days: int = 30
+    days: int = 30,
+    file_format: Annotated[Literal["xlsx", "csv"], Query(alias="format")] = "xlsx",
 ):
+    """Выгрузка списаний за период: Excel (по умолчанию) или CSV (?format=csv)."""
     query = (
         select(
             WasteRecord.created_at,
@@ -133,6 +135,15 @@ async def export_waste_records(
             df[col] = df[col].astype(float)
         df.columns = columns
 
+    filename = f"wastetrack_report_{days}d.{file_format}"
+    headers = {"Content-Disposition": f"attachment; filename={filename}"}
+
+    if file_format == "csv":
+        # UTF-8 с BOM и разделитель «;», десятичная запятая —
+        # так файл сразу правильно открывается в русскоязычном Excel
+        data = df.to_csv(index=False, sep=';', decimal=',').encode('utf-8-sig')
+        return StreamingResponse(io.BytesIO(data), media_type="text/csv; charset=utf-8", headers=headers)
+
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Списания')
@@ -141,5 +152,5 @@ async def export_waste_records(
     return StreamingResponse(
         buffer,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f"attachment; filename=wastetrack_report_{days}d.xlsx"}
+        headers=headers
     )

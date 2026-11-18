@@ -13,6 +13,7 @@ interface Product {
 interface Reason {
   id: number;
   name: string;
+  requires_comment?: boolean; // например, «Прочее»: без комментария списать нельзя
 }
 
 interface GridRecord {
@@ -22,6 +23,7 @@ interface GridRecord {
   reason_name?: string,
   hour?: number,
   quantity: number,
+  comment?: string | null,
 }
 
 // Новая структура для хранения деталей в ячейке
@@ -46,6 +48,7 @@ export default function TerminalPage() {
   
   const [quantity, setQuantity] = useState<string>('');
   const [selectedReason, setSelectedReason] = useState<number | ''>('');
+  const [comment, setComment] = useState<string>('');
   const [loadError, setLoadError] = useState<string>('');
   const [search, setSearch] = useState<string>('');
 
@@ -122,6 +125,7 @@ export default function TerminalPage() {
     setQuantity('1');
     setCellRecords(details ? details.records : []);
     setSelectedReason('');
+    setComment('');
   };
 
   const handleSubmit = async () => {
@@ -129,6 +133,11 @@ export default function TerminalPage() {
     
     const qty = parseFloat(quantity);
     if (isNaN(qty)) return alert('Некорректное количество');
+
+    const reason = reasons.find(r => r.id === Number(selectedReason));
+    if (qty > 0 && reason?.requires_comment && !comment.trim()) {
+      return alert(`Для причины «${reason.name}» нужен комментарий`);
+    }
 
     try {
       if (qty < 0) return alert('Количество не может быть отрицательным');
@@ -164,14 +173,17 @@ export default function TerminalPage() {
         reason_id: Number(selectedReason),
         restaurant_id: RESTAURANT_ID,
         quantity: qty,
+        comment: comment.trim() || undefined,
         created_at: now.toLocaleString('sv-SE') // Передаем локальное время на сервер
       });
       
       setSelectedProduct(null);
       loadData();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      alert('Ошибка при списании');
+      // Сервер объясняет причину отказа (например, нет обязательного комментария)
+      const detail = error?.response?.data?.detail;
+      alert(typeof detail === 'string' ? detail : 'Ошибка при списании');
     }
   };
   const handleSelectedReasonChange = (reasonId: number) => {
@@ -181,7 +193,12 @@ export default function TerminalPage() {
     // иначе начинаем с 1 (в пустой ячейке gridData[...] нет, поэтому через ?.)
     const existing = gridData[`${selectedProduct.id}-${selectedHour}`]?.groupedReasons[`${reasonId}`];
     setQuantity(existing && existing > 0 ? existing.toString() : '1');
+    // Комментарий уже сделанного списания по этой причине — для редактирования
+    const existingRecord = cellRecords.find(r => r.reason_id === reasonId);
+    setComment(existingRecord?.comment ?? '');
   }
+
+  const selectedReasonObj = reasons.find(r => r.id === Number(selectedReason));
 
   return (
     <div style={{ padding: 20, fontFamily: 'sans-serif', background: '#f5f5f5', minHeight: '100vh', overflowX: 'auto' }}>
@@ -309,10 +326,29 @@ export default function TerminalPage() {
               >
                 <option value="">-- Выберите причину --</option>
                 {reasons.map(r => (
-                  <option key={r.id} value={r.id}>{r.name}</option>
+                  <option key={r.id} value={r.id}>{r.name}{r.requires_comment ? ' (с комментарием)' : ''}</option>
                 ))}
               </select>
             </div>
+
+            {selectedReasonObj?.requires_comment && (
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', marginBottom: 5 }}>
+                  Комментарий <span style={{ color: '#dc3545' }}>(обязательно)</span>:
+                </label>
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  maxLength={500}
+                  rows={3}
+                  placeholder="Что случилось с продуктом?"
+                  style={{
+                    width: '100%', boxSizing: 'border-box', padding: 10, fontSize: 16, borderRadius: 6,
+                    border: `1px solid ${comment.trim() ? '#ccc' : '#dc3545'}`, resize: 'vertical'
+                  }}
+                />
+              </div>
+            )}
 
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setSelectedProduct(null)} style={{ flex: 1, padding: 15, borderRadius: 8, border: 'none', background: '#e0e0e0', fontSize: 16 }}>Отмена</button>

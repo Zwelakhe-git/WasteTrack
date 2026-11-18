@@ -28,6 +28,30 @@ export default function DashboardPage() {
     fetchAnalytics();
   }, [days]);
 
+  // Прямая ссылка на скачивание с токеном в заголовке не сработает через window.open,
+  // поэтому используем apiClient с responseType: 'blob'
+  const handleExport = async (format: 'xlsx' | 'csv') => {
+    try {
+      const response = await apiClient.get('/analytics/export', {
+        params: { days, format },
+        responseType: 'blob'
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `wastetrack_report_${days}d.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Ошибка экспорта', err);
+      alert('Не удалось выгрузить отчёт');
+    }
+  };
+
+  const exportButtonStyle = { padding: '8px 16px', background: '#28a745', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' };
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -45,24 +69,10 @@ export default function DashboardPage() {
         <Link to="/catalogs" style={{ padding: '8px 16px', background: '#007bff', color: '#fff', textDecoration: 'none', borderRadius: 6 }}>
             Справочники
         </Link>
-        <button 
-            onClick={() => {
-                // Прямая ссылка на скачивание с токеном в заголовке не сработает через window.open,
-                // поэтому используем apiClient с responseType: 'blob'
-                apiClient.get(`/analytics/export?days=${days}`, { responseType: 'blob' }).then(response => {
-                const url = window.URL.createObjectURL(new Blob([response.data]));
-                const link = document.createElement('a');
-                link.href = url;
-                link.setAttribute('download', `report_${days}d.xlsx`);
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                });
-            }}
-            style={{ padding: '8px 16px', background: '#28a745', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}
-            >
-            Экспорт в Excel
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => handleExport('xlsx')} style={exportButtonStyle}>Экспорт в Excel</button>
+          <button onClick={() => handleExport('csv')} style={exportButtonStyle}>Экспорт в CSV</button>
+        </div>
         <div style={{ display: 'flex', gap: 15, alignItems: 'center' }}>
           <select 
             value={days} 
