@@ -35,3 +35,7 @@ class ProductRead(ProductBase):
     id: int
     unit: UnitRead  # Вложенная схема, чтобы сразу отдавать единицу измерения
     model_config = ConfigDict(from_attributes=True)
+
+class ProductDelete(BaseModel):
+    status: bool
+    message: str

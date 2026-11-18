@@ -8,7 +8,7 @@ from app.database import get_db
 from app.models.user import User, UserRole
 from app.models.product import Product, Unit, ProductStatus
 from app.models.waste_record import WasteRecord
-from app.schemas.product import ProductCreate, ProductRead, ProductUpdate, UnitRead
+from app.schemas.product import ProductCreate, ProductRead, ProductUpdate, UnitRead, ProductDelete
 from app.core.deps import get_current_user
 from sqlalchemy.orm import selectinload
 
@@ -96,3 +96,25 @@ async def update_product(
         select(Product).options(selectinload(Product.unit)).where(Product.id == product_id)
     )
     return result.scalars().first()
+
+@router.delete("/{product_id}", response_model=ProductDelete)
+async def delete_product(
+    product_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_manager_or_admin)]
+):
+    product = await db.get(Product, product_id)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    query = select(WasteRecord).options(
+        selectinload(WasteRecord.product)
+    )
+    waste_records = (await db.execute(query)).scalars().one()
+    if waste_records:
+        raise HTTPException(status_code=403, detail="Failed to delete product with records")
+
+    await db.delete(product)
+    return {
+        "status": True,
+        "message": "Product successfully deleted"
+    }
