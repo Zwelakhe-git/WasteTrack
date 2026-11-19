@@ -79,6 +79,36 @@ export default function CatalogsPage() {
     } catch (err) { alert('Ошибка добавления причины'); }
   };
 
+  const deleteProduct = async (product: any) => {
+    try {
+      const res = await apiClient.delete(`/products/${product.id}`);
+      console.log(res.status);
+      if (res.status === 200){
+        alert("Продукт успешно удален");
+        loadData();
+      } else {
+        alert("Не удалось удалать продкут. проверьте, есть ли у продукта записи списания!");
+      }
+    } catch(err){
+      //console.error(err);
+      alert("Не удалось удалать продкут. проверьте, есть ли у продукта записи списания!");
+    }
+  }
+
+  const handleDeleteReason = async (r: any) => {
+    try {
+      const res = await apiClient.delete(`/reasons/${r.id}`);
+      if(res.status === 200){
+        alert("Успеншо удалена причина списаний");
+        loadData();
+      } else {
+        alert("Не удалось удалить причину списаний");
+      }
+    } catch(err){
+      alert("Не удалось удалить причину списаний");
+    }
+  }
+
   return (
     <div style={{ padding: 30, fontFamily: 'sans-serif', background: '#f8f9fa', minHeight: '100vh' }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 30 }}>
@@ -113,6 +143,7 @@ export default function CatalogsPage() {
                 <th style={{ padding: 6 }}>Ед.</th>
                 <th style={{ padding: 6 }}>Себестоимость, ₽ за ед.</th>
                 <th style={{ padding: 6 }}>Статус</th>
+                <th style={{ padding: 6 }}>Действие</th>
               </tr>
             </thead>
             <tbody>
@@ -136,8 +167,13 @@ export default function CatalogsPage() {
                       )}
                     </td>
                     <td style={{ padding: 6 }}>
-                      <button onClick={() => handleToggleStatus(p)} style={{ padding: '6px 10px', border: '1px solid #ccc', borderRadius: 4, background: '#fff' }}>
+                      <button onClick={() => handleToggleStatus(p)} style={{ padding: '6px 10px', border: '1px solid #ccc', borderRadius: 4}}>
                         {p.status === 'active' ? 'Заморозить' : 'Активировать'}
+                      </button>
+                    </td>
+                    <td style={{ padding: 6 }}>
+                      <button onClick={() => deleteProduct(p)} style={{ padding: '6px 10px', border: '1px solid #ccc', borderRadius: 4, background: "red", cursor: "pointer"}} title="нельзя удалить продукт с записями">
+                      удалить
                       </button>
                     </td>
                   </tr>
@@ -160,11 +196,14 @@ export default function CatalogsPage() {
             <button type="submit" style={{ padding: 10, background: '#28a745', color: '#fff', border: 'none', borderRadius: 6 }}>Добавить причину</button>
           </form>
 
-          <ul>
+          <div>
             {reasons.map(r => (
-              <li key={r.id}>{r.name}</li>
+              <div key={r.id} style={{ display: "flex", justifyContent: "space-between", gap: "10px", marginBottom: "5px"}}>
+                <span className="reason-name">{r.name}</span>
+                <button type="button" onClick={() => handleDeleteReason(r)} style={{ padding: '6px 10px', border: '1px solid #ccc', borderRadius: 4, background: "red", cursor: "pointer"}}>Удалить</button>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       </div>
     </div>

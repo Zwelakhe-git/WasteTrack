@@ -4,8 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.database import get_db
 from app.models.reason import Reason
-from app.schemas.reason import ReasonRead, ReasonCreate, ReasonUpdate
+from app.schemas.reason import ReasonRead, ReasonCreate, ReasonUpdate, ReasonDelete
 from app.models.user import User
+from app.models.waste_record import WasteRecord
 from app.utils.utils import get_current_manager_or_admin
 
 router = APIRouter(prefix="/reasons", tags=["Reasons"])
@@ -46,3 +47,24 @@ async def update_reason(
     await db.commit()
     await db.refresh(reason)
     return reason
+
+@router.delete("/{reason_id}", response_model=ReasonDelete)
+async def delete_reason(
+    reason_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_manager_or_admin)]
+):
+    reason = await db.get(Reason, reason_id)
+    if not reason:
+        raise HTTPException(status_code=404, detail="Reason not found")
+    query = select(WasteRecord).where(WasteRecord.reason_id == reason_id)
+    waste_records = (await db.execute(query)).scalars().all()
+
+    if waste_records:
+        raise HTTPException(status_code=403, detail=f"Failed to delete reason with records. Reason {reason_id} is in {len(waste_records)} records")
+    await db.delete(reason)
+    await db.commit()
+    return {
+        "status": True,
+        "message": "Reason successfully deleted"
+    }

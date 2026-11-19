@@ -25,3 +25,7 @@ class ReasonUpdate(BaseModel):
 class ReasonRead(ReasonBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
+
+class ReasonDelete(BaseModel):
+    status: bool
+    message: str
