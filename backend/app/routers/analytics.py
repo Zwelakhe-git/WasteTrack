@@ -122,18 +122,27 @@ async def export_waste_records(
         .where(*_period_filter(days, restaurant_id))
         .order_by(WasteRecord.created_at)
     )
-    rows = (await db.execute(query)).mappings().all()
+    result = await db.execute(query)
+    rows = result.all()
 
-    columns = ['Дата и время', 'Продукт', 'Причина', 'Количество', 'Ед. изм.',
-               'Себестоимость ед., руб.', 'Сумма, руб.', 'Комментарий']
-    df = pd.DataFrame(rows)
-    if df.empty:
-        df = pd.DataFrame(columns=columns)
-    else:
+    # Заголовки задаются по имени колонки запроса, а не по позиции:
+    # pd.DataFrame(mappings) сортирует ключи по алфавиту, и колонки съезжали
+    titles = {
+        'created_at': 'Дата и время',
+        'product': 'Продукт',
+        'reason': 'Причина',
+        'quantity': 'Количество',
+        'unit': 'Ед. изм.',
+        'unit_cost': 'Себестоимость ед., руб.',
+        'total_cost': 'Сумма, руб.',
+        'comment': 'Комментарий',
+    }
+    df = pd.DataFrame(rows, columns=list(result.keys()))
+    if not df.empty:
         df['created_at'] = pd.to_datetime(df['created_at']).dt.strftime('%Y-%m-%d %H:%M')
         for col in ('quantity', 'unit_cost', 'total_cost'):
             df[col] = df[col].astype(float)
-        df.columns = columns
+    df = df[list(titles)].rename(columns=titles)
 
     filename = f"wastetrack_report_{days}d.{file_format}"
     headers = {"Content-Disposition": f"attachment; filename={filename}"}
