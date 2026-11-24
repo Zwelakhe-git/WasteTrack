@@ -15,7 +15,7 @@ from app.models.restaurant import Restaurant
 from app.models.user import User
 from app.schemas.waste import WasteRecordCreate, WasteRecordRead, WasteRecordUpdate
 from app.core.deps import get_current_user
-from app.utils.utils import parse_client_time
+from app.utils.utils import parse_client_time, wall_clock_now
 
 router = APIRouter(prefix="/waste", tags=["Waste Records"])
 
@@ -70,6 +70,9 @@ async def create_waste_record(
     _require_comment(reason, waste_in.comment)
 
     created_at = parse_client_time(waste_in.created_at)
+    # Списывать в час, который ещё не наступил, нельзя (та же проверка есть в терминале)
+    if created_at is not None and created_at > wall_clock_now() + timedelta(minutes=1):
+        raise HTTPException(status_code=422, detail="Нельзя списывать в час, который ещё не наступил")
 
     record = None
     if created_at is not None:
